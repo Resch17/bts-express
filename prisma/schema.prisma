@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model category {
+  id      Int       @id @default(autoincrement())
+  name    String
+  pattern pattern[]
+}
+
+model fabric {
+  id            Int             @id @default(autoincrement())
+  retailerid    Int
+  userid        Int
+  name          String
+  url           String?
+  priceperyard  Decimal?        @db.Decimal(12, 2)
+  yardsinstock  Decimal         @default(0) @db.Decimal(18, 4)
+  fabrictypeid  Int
+  notes         String?
+  fabrictype    fabrictype      @relation(fields: [fabrictypeid], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_fabric_fabrictype")
+  retailer      retailer        @relation(fields: [retailerid], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_fabric_retailer")
+  user          user            @relation(fields: [userid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fabric_user")
+  fabricimage   fabricimage[]
+  projectfabric projectfabric[]
+}
+
+model fabrictype {
+  id      Int       @id @default(autoincrement())
+  name    String
+  fabric  fabric[]
+  pattern pattern[]
+}
+
+model file {
+  id        Int     @id @default(autoincrement())
+  name      String
+  path      String
+  patternid Int
+  pattern   pattern @relation(fields: [patternid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_file_pattern")
+}
+
+model pattern {
+  id           Int            @id @default(autoincrement())
+  url          String?
+  userid       Int
+  name         String
+  publisherid  Int
+  purchasedate DateTime       @db.Timestamp(6)
+  fabrictypeid Int
+  notes        String?
+  categoryid   Int
+  category     category       @relation(fields: [categoryid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pattern_category")
+  fabrictype   fabrictype     @relation(fields: [fabrictypeid], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_pattern_fabrictype")
+  publisher    publisher      @relation(fields: [publisherid], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_pattern_publisher")
+  user         user           @relation(fields: [userid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pattern_user")
+  file         file[]
+  patternfile  patternfile[]
+  patternimage patternimage[]
+  patternsize  patternsize[]
+  project      project[]
+}
+
+model patternimage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  patternid Int
+  pattern   pattern @relation(fields: [patternid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patternimage_pattern")
+}
+
+model patternsize {
+  id        Int       @id @default(autoincrement())
+  patternid Int
+  sizeid    Int
+  yards     Decimal?  @db.Decimal(18, 4)
+  pattern   pattern   @relation(fields: [patternid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patternsize_pattern")
+  size      size      @relation(fields: [sizeid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patternsize_size")
+  project   project[]
+}
+
+model project {
+  id              Int             @id @default(autoincrement())
+  name            String
+  userid          Int
+  patternid       Int
+  projectstatusid Int
+  createdatetime  DateTime        @db.Timestamp(6)
+  patternsizeid   Int
+  iscomplete      Boolean
+  pattern         pattern         @relation(fields: [patternid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_project_pattern")
+  patternsize     patternsize     @relation(fields: [patternsizeid], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_project_patternsize")
+  projectstatus   projectstatus   @relation(fields: [projectstatusid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_project_projectstatus")
+  user            user            @relation(fields: [userid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_project_user")
+  projectfabric   projectfabric[]
+  projectimage    projectimage[]
+  projectnotes    projectnotes[]
+}
+
+model projectfabric {
+  id        Int      @id @default(autoincrement())
+  projectid Int
+  fabricid  Int
+  yards     Decimal? @db.Decimal(18, 4)
+  fabric    fabric   @relation(fields: [fabricid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projectfabric_fabric")
+  project   project  @relation(fields: [projectid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projectfabric_project")
+}
+
+model projectimage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  projectid Int
+  caption   String?
+  project   project @relation(fields: [projectid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projectimage_project")
+}
+
+model projectnotes {
+  id        Int     @id @default(autoincrement())
+  projectid Int
+  text      String
+  project   project @relation(fields: [projectid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_projectnotes_project")
+}
+
+model projectstatus {
+  id      Int       @id @default(autoincrement())
+  name    String
+  project project[]
+}
+
+model publisher {
+  id      Int       @id @default(autoincrement())
+  name    String
+  url     String?
+  pattern pattern[]
+}
+
+model retailer {
+  id     Int      @id @default(autoincrement())
+  name   String
+  url    String?
+  fabric fabric[]
+}
+
+model size {
+  id           Int           @id @default(autoincrement())
+  name         String
+  abbreviation String
+  patternsize  patternsize[]
+}
+
+model user {
+  id               Int       @id @default(autoincrement())
+  username         String
+  firebaseuserid   String
+  email            String
+  registerdatetime DateTime  @db.Timestamp(6)
+  isadministrator  Boolean
+  fabric           fabric[]
+  pattern          pattern[]
+  project          project[]
+}
+
+model patternfile {
+  id        Int     @id @default(autoincrement())
+  name      String
+  patternid Int
+  bytes     Bytes
+  pattern   pattern @relation(fields: [patternid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_patternfile_pattern")
+}
+
+model fabricimage {
+  id       Int    @id @default(autoincrement())
+  url      String
+  fabricid Int
+  fabric   fabric @relation(fields: [fabricid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fabricimage_fabric")
+}
